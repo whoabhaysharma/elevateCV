@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { UploadCloud } from "lucide-react";
-import { HTML } from "@/Constants/iframeFile";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI("API KEY");
+const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_URL);
 const model = genAI.getGenerativeModel({ model: 'models/gemini-2.0-flash' });
 
 export default function Home() {
@@ -20,6 +19,10 @@ export default function Home() {
     setFile(uploadedFile);
   };
 
+  function extractHTMLContent(rawText) {
+    // Remove the markdown-like markers at the beginning and end
+    return rawText.replace("```html", "").replace("```", "");
+}
   const handleUpload = () => {
     if (!file) return;
     
@@ -39,9 +42,27 @@ export default function Home() {
               mimeType: "application/pdf",
             },
           },
-          "Summarize this document",
+          `
+          I need an AI-generated resume based on the information from my existing resume, but do not follow its original structure. Instead, analyze my experience, skills, and personality traits to create a resume that highlights the most important sections based on best industry practices.
+
+          Key Instructions:
+          Do not replicate the structure of my original resume. Instead, organize the information in a way that best presents my strengths.
+          Analyze my professional background to determine the most relevant and impactful sections. Prioritize clarity, conciseness, and effectiveness.
+          Ensure a professional tone and format that aligns with industry standards.
+          Optimize for ATS (Applicant Tracking System) by using clear headings, keywords, and a structured layout.
+          Highlight key achievements rather than just listing responsibilities. Use quantifiable data wherever possible.
+          Keep it concise (ideally one page, unless necessary to extend).
+          Output Format:
+          Return the resume as fully functional HTML and CSS code.
+          Ensure a clean, modern, and responsive design that looks great on both desktop and mobile screens.
+          Use semantic HTML and follow best practices for accessibility and readability.
+          Include proper spacing, fonts, and a visually appealing layout that makes the resume easy to scan.
+          Use minimal external dependencies—pure HTML and CSS preferred (avoid JavaScript unless necessary).
+          Generate only the HTML and CSS code for a well-structured and ATS-friendly resume. Do not include explanations, markdown formatting, or any additional text—just return plain HTML and CSS.
+          `,
         ]);
-        console.log(result.response.candidates[0].content.parts[0].text, "RESULTTT");
+        const resp = result.response.candidates[0].content.parts[0].text
+        setResponseContent(extractHTMLContent(resp))
       } catch (error) {
         console.error("Error uploading file:", error);
       }
@@ -94,7 +115,7 @@ export default function Home() {
         {resultText ? (
           <textarea className="w-full h-full p-4" value={resultText} readOnly />
         ) : (
-          <iframe className="w-full h-full border-none" srcDoc={HTML}></iframe>
+          <iframe className="w-full h-full border-none" srcDoc={responseContent ? responseContent : ""}></iframe>
         )}
       </div>
     </div>
