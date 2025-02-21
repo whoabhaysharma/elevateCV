@@ -1,21 +1,31 @@
-const ADDITIONAL_PROMPT = `I need an AI-generated resume based on the information from my existing resume, but do not follow its original structure. Instead, analyze my experience, skills, and personality traits to create a resume that highlights the most important sections based on best industry practices.
-Key Instructions:
-Do not replicate the structure of my original resume. Instead, organize the information in a way that best presents my strengths.
-Analyze my professional background to determine the most relevant and impactful sections. Prioritize clarity, conciseness, and effectiveness.
-Ensure a professional tone and format that aligns with industry standards.
-Optimize for ATS (Applicant Tracking System) by using clear headings, keywords, and a structured layout.
-Highlight key achievements rather than just listing responsibilities. Use quantifiable data wherever possible.
-Keep it concise (ideally one page, unless necessary to extend).
-Output Format:
-Return the resume as fully functional HTML and CSS code.
-Ensure a clean, modern, and responsive design that looks great on both desktop and mobile screens.
-Use semantic HTML and follow best practices for accessibility and readability.
-Include proper spacing, fonts, and a visually appealing layout that makes the resume easy to scan.
-Use minimal external dependencies—pure HTML and CSS preferred (avoid JavaScript unless necessary).
-Generate only the HTML and CSS code for a well-structured and ATS-friendly resume. Do not include explanations, markdown formatting, or any additional text—just return plain HTML and CSS.
-`;
+const ADDITIONAL_PROMPT = `
+You are an AI that reads and analyzes resume data and generates a completely new resume layout in HTML and CSS from scratch.
 
+Key Requirements:
+Do NOT copy the original layout.
 
+The new resume must have a different structure than the input data.
+Reorganize the sections for better readability and impact.
+Auto-generate the best possible layout for the given data instead of mirroring the original.
+Intelligent Layout Selection:
+
+Dynamically decide whether to use one-column, two-column, table-based, or grid-based layouts depending on the content.
+Prioritize logical flow and clarity while ensuring uniqueness.
+Use modern best practices like flexbox and CSS grid.
+Profession-Based Design Adaptation:
+
+Graphic Designer: Stylish, creative fonts, elegant spacing, well-structured.
+Software Developer: Focus on projects, skills, and a structured format.
+Marketer/Salesperson: Emphasize achievements, lead with key metrics.
+Other Professions: Clean, industry-appropriate, and impactful.
+Modern & ATS-Optimized Resume:
+
+Use strong hierarchy (<h1>, <h2>, etc.) for ATS compatibility.
+Add bigger fonts, images, and colors where necessary for readability.
+Ensure mobile responsiveness and professional design.
+Final Output:
+Return only the HTML and CSS.
+No comments, explanations, or references to the original structure.`
 export {
     ADDITIONAL_PROMPT
 }
