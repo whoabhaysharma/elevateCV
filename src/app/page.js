@@ -1,13 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import axios from "axios";
 import { UploadCloud, Loader2 } from "lucide-react";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ADDITIONAL_PROMPT } from "@/constants/prompt";
-import html2pdf from "html2pdf.js";
-
-const genAI = new GoogleGenerativeAI('AIzaSyCQLyuYI0gTkV8w-b4_wv-qdwbLweOAwsI');
-const model = genAI.getGenerativeModel({ model: 'models/gemini-2.0-pro-exp-02-05' });
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -32,71 +28,60 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setUploadStatus("Uploading...");
-    
+
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    
     reader.onload = async () => {
-      const base64Data = reader.result.split(",")[1];
-      
+      const base64Data = reader.result; // Contains the full data URL
       try {
-        const result = await model.generateContent([
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: "application/pdf",
-            },
-          },
-          'extract the contents of this resume and create a detailed document about this person',
-        ]);
-        const resp = result.response.candidates[0].content.parts[0].text;
+        // First API call: Send fileData and prompt to extract resume contents
+        const payload = {
+          fileData: base64Data, // API will extract the base64 part if needed
+          text: "extract the contents of this resume and create a detailed document about this person",
+          // Optionally, you can also send custom model and mimeType here:
+          // model: 'models/gemini-2.0-flash',
+          // mimeType: 'application/pdf'
+        };
 
-        const resultHtml = await model.generateContent(ADDITIONAL_PROMPT + "here is my resume data" + resp + customPrompt)
+        const { data } = await axios.post("/api/generate", payload);
+        const extractedResume = data.result;
 
-        const htmlText = resultHtml.response.candidates[0].content.parts[0].text;
-        setResponseContent(extractHTMLContent(htmlText));
+        // Optionally, if you have additional prompt to combine with the extracted data,
+        // make a second API call using only text (no fileData)
+        if (ADDITIONAL_PROMPT || customPrompt) {
+          const additionalPayload = {
+            text:
+              ADDITIONAL_PROMPT +
+              " here is my resume data: " +
+              extractedResume +
+              " " +
+              customPrompt,
+          };
+          const { data: additionalData } = await axios.post(
+            "/api/generate",
+            additionalPayload
+          );
+          const htmlText = additionalData.result;
+          setResponseContent(extractHTMLContent(htmlText));
+        } else {
+          setResponseContent(extractedResume);
+        }
         setUploadStatus("Upload successful!");
-      } catch (error) {
-        console.error("Error uploading file:", error);
+      } catch (err) {
+        console.error("Error uploading file:", err);
         setError("Failed to upload file. Please try again.");
         setUploadStatus("");
       } finally {
         setLoading(false);
       }
     };
-    
+
     reader.onerror = (error) => {
       console.error("Error reading file:", error);
       setError("Error reading file. Please try again.");
       setLoading(false);
     };
   };
-
-  const handleDownloadPDF = () => {
-    if (!responseContent) return;
-  
-    // Find the iframe element
-    const iframe = document.querySelector("iframe");
-    if (!iframe) return;
-  
-    // Clone the iframe document into a new element
-    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-    const element = document.createElement("div");
-    element.innerHTML = iframeDocument.documentElement.outerHTML; // Preserve full HTML including styles
-  
-    // Use html2pdf to convert the full iframe content
-    html2pdf()
-      .set({
-        margin: 10,
-        filename: "download.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2 }, // Improve rendering quality
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(element)
-      .save();
-  };
-  
 
   return (
     <div className="w-full h-screen grid grid-cols-[30%_70%] bg-gray-50">
@@ -130,14 +115,16 @@ export default function Home() {
               onClick={handleUpload}
               disabled={loading}
             >
-              {loading ? <Loader2 className="animate-spin w-5 h-5 mr-2" /> : "Upload and Extract PDF"}
+              {loading ? (
+                <Loader2 className="animate-spin w-5 h-5 mr-2" />
+              ) : (
+                "Upload and Extract PDF"
+              )}
             </button>
             {uploadStatus && (
               <p className="mt-2 text-sm text-gray-700">{uploadStatus}</p>
             )}
-            {error && (
-              <p className="mt-2 text-sm text-red-500">{error}</p>
-            )}
+            {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
           </>
         )}
       </div>
@@ -149,15 +136,10 @@ export default function Home() {
             <p className="text-gray-600 mt-2">Processing file...</p>
           </div>
         ) : responseContent ? (
-          <>
-            <iframe className="w-full h-full border-none rounded-lg shadow-md" srcDoc={responseContent}></iframe>
-            <button
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-              onClick={handleDownloadPDF}
-            >
-              Download as PDF
-            </button>
-          </>
+          <iframe
+            className="w-full h-full border-none rounded-lg shadow-md"
+            srcDoc={responseContent}
+          ></iframe>
         ) : (
           <p className="text-gray-500">No file uploaded</p>
         )}
