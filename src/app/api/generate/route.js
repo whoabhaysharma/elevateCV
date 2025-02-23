@@ -1,58 +1,73 @@
-// app/api/generate/route.js
-import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export async function POST(req) {
+export async function GET(req) {
   try {
-    const { fileData, text, model: modelName, mimeType: fileMimeType } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const text = searchParams.get("text") || "";
+    const fileData = searchParams.get("fileData") || "";
 
-    // At least one input must be provided.
     if (!fileData && !text) {
-      return NextResponse.json(
-        { error: 'Provide at least fileData and/or a text prompt.' },
-        { status: 400 }
+      return new Response(
+        JSON.stringify({ error: "Provide at least fileData and/or a text prompt." }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Set default values if not provided.
-    const modelToUse = modelName || 'models/gemini-2.0-flash';
-    const mime = fileMimeType || 'application/pdf';
+    const modelName = searchParams.get("model") || "gemini-1.5-flash";
+    const fileMimeType = searchParams.get("mimeType") || "application/pdf";
 
-    // Build the payload for the AI call.
     const payload = [];
-
     if (fileData) {
-      // Extract base64 content if a data URL is provided.
-      const base64Data = fileData.includes('base64,')
-        ? fileData.split('base64,')[1]
+      const base64Data = fileData.includes("base64,")
+        ? fileData.split("base64,")[1]
         : fileData;
-
       payload.push({
         inlineData: {
           data: base64Data,
-          mimeType: mime,
+          mimeType: fileMimeType,
         },
       });
     }
-
     if (text) {
-      // Add the text prompt to the payload.
       payload.push(text);
     }
 
-    // Initialize the Google AI client using your API key from env variables.
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ model: modelToUse });
+    const model = genAI.getGenerativeModel({ model: modelName });
 
-    // Call the model with the constructed payload.
-    const result = await model.generateContent(payload);
+    // Generate content as a stream
+    const result = await model.generateContentStream(payload);
 
-    // Extract the generated content from the response.
-    const resp = result.response.candidates[0].content.parts[0].text;
+    // Create a ReadableStream for SSE
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.stream) {
+            const rawText = await chunk.text();
+            const message = `data: ${JSON.stringify({ text: rawText })}\n\n`; // Proper SSE format
+            controller.enqueue(new TextEncoder().encode(message));
+          }
+          controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (err) {
+          console.error("Streaming error:", err);
+          controller.error(err);
+        }
+      },
+    });
 
-    return NextResponse.json({ result: resp }, { status: 200 });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
   } catch (error) {
-    console.error('Error generating content:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Error generating content:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

@@ -1,31 +1,32 @@
 const ADDITIONAL_PROMPT = `
-You are an AI that reads and analyzes resume data and generates a completely new resume layout in HTML and CSS from scratch.
+# Resume Layout Generation Instructions
 
-Key Requirements:
-Do NOT copy the original layout.
+**Overview:**  
+You are an AI that generates a resume in HTML and CSS using Tailwind CSS. The resume must occupy the full width and height of its container with **no margin or padding** at all. The content should start exactly at the top-left corner (0,0).
 
-The new resume must have a different structure than the input data.
-Reorganize the sections for better readability and impact.
-Auto-generate the best possible layout for the given data instead of mirroring the original.
-Intelligent Layout Selection:
+## Key Requirements
+- **Zero Margin/Padding:**  
+  - The generated HTML and CSS must not include any margin or padding on the \`<body>\` element or any other container.  
+  - The resume should start exactly at (0,0) and extend to cover the entire available space.
 
-Dynamically decide whether to use one-column, two-column, table-based, or grid-based layouts depending on the content.
-Prioritize logical flow and clarity while ensuring uniqueness.
-Use modern best practices like flexbox and CSS grid.
-Profession-Based Design Adaptation:
+- **Full-Space Utilization:**  
+  - The resume must use 100% of the width and height of the rendering area (or A4-sized iframe).  
+  - Do not create any additional container elements that introduce margins or centering; the content must directly fill the viewport.
 
-Graphic Designer: Stylish, creative fonts, elegant spacing, well-structured.
-Software Developer: Focus on projects, skills, and a structured format.
-Marketer/Salesperson: Emphasize achievements, lead with key metrics.
-Other Professions: Clean, industry-appropriate, and impactful.
-Modern & ATS-Optimized Resume:
+- **HTML & CSS Generation:**  
+  - Write the resume entirely in HTML and CSS using Tailwind CSS classes.  
+  - Import the Tailwind CSS library at the beginning of the HTML code.  
+  - Use semantic HTML elements (e.g., \`<header>\`, \`<section>\`, \`<footer>\`) to structure the resume.
 
-Use strong hierarchy (<h1>, <h2>, etc.) for ATS compatibility.
-Add bigger fonts, images, and colors where necessary for readability.
-Ensure mobile responsiveness and professional design.
-Final Output:
-Return only the HTML and CSS.
-No comments, explanations, or references to the original structure.`
+- **Design and Layout:**  
+  - Generate a unique and professional layout that is clear and visually appealing.  
+  - Use modern CSS techniques such as flexbox and CSS grid with Tailwind CSS to design the resume.  
+  - Ensure that the resume is designed to work perfectly in an A4-sized context, utilizing the full width and height without any outer spacing.
+
+## Output Constraints
+- Return only the HTML and CSS code—do not include any comments, explanations, or references to the original structure.
+- The final output must have no margins or padding around the resume; the content should begin at (0,0) and fully utilize the available space.
+`
 export {
     ADDITIONAL_PROMPT
 }
